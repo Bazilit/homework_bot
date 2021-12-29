@@ -17,11 +17,7 @@ def get_api_answer():
     url = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
     headers = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
     payload = {'from_date': 1638116040}
-    homework_statuses = requests.get(url, headers=headers, params=payload).json().get('homeworks')[0]['status']
+    homework_statuses = requests.get(url, headers=headers, params=payload).json()
     pprint(homework_statuses)
-
-    verdict = HOMEWORK_STATUSES[homework_statuses]
-
-    print(f'{verdict}')
 
 get_api_answer()

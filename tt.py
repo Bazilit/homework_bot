@@ -1,8 +1,9 @@
-import os
+import requests
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
-token = os.getenv('TELEGRAM_TOKEN')
-print(token)
+def check_response(response):
+    """проверяет ответ API на корректность.
+    """
+    try:
+        homeworks = response.get('homeworks')
+    except None as e:
+        return f'Список работ пуст. Тип ошибки {e}.'
