@@ -4,7 +4,11 @@ import time
 
 import requests
 import telegram
+from telegram import TelegramError
 from dotenv import load_dotenv
+from simplejson.errors import JSONDecodeError
+from exceptions import CustomStatusesError
+from http import HTTPStatus
 
 load_dotenv()
 
@@ -30,21 +34,38 @@ logging.basicConfig(
 
 def send_message(bot, message):
     """Отправляет сообщение в Telegram чат."""
-    bot.send_message(TELEGRAM_CHAT_ID, message)
+    try:
+        bot.send_message(TELEGRAM_CHAT_ID, message)
+    except TelegramError:
+        logging.error(
+            f'Невозможно отправить сообщение в чат id {TELEGRAM_CHAT_ID}'
+        )
 
 
 def get_api_answer(current_timestamp):
     """Делает запрос к единственному эндпоинту API-сервиса."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
-    homework_statuses = requests.get(ENDPOINT, headers=HEADERS, params=params)
-    response = homework_statuses.json()
-    if homework_statuses.status_code != 200:
-        raise Exception(
-            f'Статус код не 200!'
-            f'Статус код {homework_statuses.status_code}'
+    try:
+        homework_statuses = requests.get(
+            ENDPOINT,
+            headers=HEADERS,
+            params=params
         )
-    return response
+    except requests.exceptions.Timeout:
+        logging.error('Превышено время ожидания. Сайт не отвечает.')
+    except requests.exceptions.TooManyRedirects:
+        logging.error('Некорректный url адрес. Попробуйте другой.')
+    except requests.exceptions.RequestException as e:
+        logging.error('Критическая ошибка. Работа прекращена.')
+        raise SystemExit(e)
+    if homework_statuses.status_code != HTTPStatus.OK:
+        logging.error(f'Ошибка {homework_statuses.status_code}')
+        raise CustomStatusesError
+    try:
+        return homework_statuses.json()
+    except JSONDecodeError:
+        logging.error('Ответ не преобразуется в json')
 
 
 def check_response(response):
@@ -53,11 +74,11 @@ def check_response(response):
     if not homework:
         raise Exception('Нет ключа homeworks')
     if type(homework) is not list:
-        raise Exception('домашки приходят не в виде списка в ответ от API')
+        raise Exception('Домашки приходят не в виде списка в ответ от API')
     if response is None:
-        raise Exception('Нет ')
+        raise Exception('Пустой ответный запрос')
     if not isinstance(response, dict):
-        logging.error('Ошибка работает')
+        logging.error('Некорректный тип данных на входе')
     return homework
 
 
@@ -71,35 +92,26 @@ def parse_status(homework):
 
 def check_tokens():
     """Проверяет доступность переменных окружения."""
-    try:
-        if PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
-            logging.debug('Проверка переменных окружения завершилась успешно')
-            return True
-        elif len(TELEGRAM_CHAT_ID) == 0:
-            print('В переменной TELEGRAM_CHAT_ID пустое значение')
-            return False
-        elif len(TELEGRAM_TOKEN) == 0:
-            print('В переменной TELEGRAM_TOKEN пустое значение')
-            return False
-        elif len(PRACTICUM_TOKEN) == 0:
-            print('В переменной PRACTICUM_TOKEN пустое значение')
-            return False
-        elif PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
-            logging.debug('Проверка переменных окружения завершилась успешно')
-            return True
-    except TypeError as error:
-        logging.error(
-            f'В переменной некорректное значение данных.'
-            f'Тип ошибки {error}')
+    if PRACTICUM_TOKEN is None:
+        logging.error('Переменная PRACTICUM_TOKEN не задана.')
         return False
+    if TELEGRAM_TOKEN is None:
+        logging.error('Переменная TELEGRAM_TOKEN не задана.')
+        return False
+    if TELEGRAM_CHAT_ID is None:
+        logging.error('Переменная TELEGRAM_CHAT_ID не задана.')
+        return False
+    else:
+        logging.info('Проверка переменных прошла успешна.')
+        return True
 
 
 def main():
     """Основная логика работы бота."""
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    current_timestamp = int(time.time())
-    check_tokens()
-    while True:
+    current_timestamp = int(0)
+    # int(time.time())
+    while check_tokens() is True:
         try:
             response = get_api_answer(current_timestamp)
             check_response(response)
@@ -115,7 +127,7 @@ def main():
             time.sleep(RETRY_TIME)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            logging.error(f'Проблема с работой. Ошибка{error}')
+            logging.error(f'Проблема с работой. Ошибка {error}')
             send_message(bot, message)
             time.sleep(RETRY_TIME)
 
