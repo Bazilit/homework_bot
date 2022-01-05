@@ -9,3 +9,11 @@ class CustomStatusesError(Exception):
             f'Статус код не 200!.'
             f'Статус код {homework_statuses.status_code}.'
         )
+
+
+class ResponseIsNone(Exception):
+    """В ответе ничего нет. Response is None."""
+
+    def __init__(self, message='Пустой ответный запрос'):
+        """Функция вывода сообщения ошибки."""
+        super().__init__(message)
