@@ -45,6 +45,7 @@ def send_message(bot, message):
         logger.error(
             f'Невозможно отправить сообщение в чат id {TELEGRAM_CHAT_ID}'
         )
+        return
 
 
 def get_api_answer(current_timestamp):
@@ -59,8 +60,10 @@ def get_api_answer(current_timestamp):
         )
     except requests.exceptions.Timeout:
         logger.error('Превышено время ожидания. Сайт не отвечает.')
+        return
     except requests.exceptions.TooManyRedirects:
         logger.error('Некорректный url адрес. Попробуйте другой.')
+        return
     except requests.exceptions.RequestException as e:
         logger.error('Критическая ошибка. Работа прекращена.')
         raise SystemExit(e)
@@ -72,6 +75,7 @@ def get_api_answer(current_timestamp):
         return response
     except JSONDecodeError:
         logger.error('Ответ не преобразуется в json')
+        return
 
 
 def check_response(response):
@@ -85,7 +89,7 @@ def check_response(response):
     if 'homeworks' not in response:
         logger.error('По ключу homeworks ничего нет')
         raise KeyError('Ошибка с ключем homeworks')
-    if response['homeworks'] == []:
+    if not response['homeworks']:
         return {}
     homework = response['homeworks']
     if not isinstance(homework, list):
