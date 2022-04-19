@@ -1,2 +1,14 @@
-# homework_bot
-python telegram bot
+
+# "Homework" бот для Telegram
+---
+Описание:
+Telegram бот, работает с API Яндекс.Практикум.
+Запрашивает статус работы с сервиса Яндекс.Практикум (интервал раз в 10 мин).
+Информирует в случае наличия изменений по итогам review.
+---
+Технологии:
+ * Python 3.8
+ * Simplejson 3.17.6
+ * python-dotenv 0.19.0
+ * Python Telegram Bot 13.7
+ ---
