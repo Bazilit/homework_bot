@@ -12,3 +12,9 @@ Telegram бот, работает с API Яндекс.Практикум.
  * python-dotenv 0.19.0
  * Python Telegram Bot 13.7
  ---
+ ### Установка:
+Для установки ПО необходимо установить зависимости
+
+*pip install -r requirement.txt*
+
+
